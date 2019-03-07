@@ -51,6 +51,7 @@ def visualize_trajectory_2d(pose,path_name="Unknown",show_ori=False):
               4*4 matrix is in SE(3)
   '''
   fig,ax = plt.subplots(figsize=(5,5))
+  #import pdb;pdb.set_trace()
   n_pose = pose.shape[2]
   ax.plot(pose[0,3,:],pose[1,3,:],'r-',label=path_name)
   ax.scatter(pose[0,3,0],pose[1,3,0],marker='s',label="start")
@@ -71,5 +72,6 @@ def visualize_trajectory_2d(pose,path_name="Unknown",show_ori=False):
   ax.axis('equal')
   ax.grid(False)
   ax.legend()
-  plt.show(block=True)
+  #plt.show(block=True)
+  plt.show()
   return fig, ax
