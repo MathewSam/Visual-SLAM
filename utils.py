@@ -70,8 +70,8 @@ def visualize_trajectory_2d(pose,landmarks,path_name="Unknown",show_ori=False):
   x = []
   y = [] 
   for landmark in landmarks:
-      x.append(landmark.mu[1])
-      y.append(landmark.mu[0])
+      x.append(landmark.mu[0])
+      y.append(landmark.mu[1])
   ax.scatter(x,y)
   ax.set_xlabel('x')
   ax.set_ylabel('y')
