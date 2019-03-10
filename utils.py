@@ -42,7 +42,7 @@ def load_data(file_name):
   return t,features,linear_velocity,rotational_velocity,K,b,cam_T_imu
 
 
-def visualize_trajectory_2d(pose,path_name="Unknown",show_ori=False):
+def visualize_trajectory_2d(pose,landmarks,path_name="Unknown",show_ori=False):
   '''
   function to visualize the trajectory in 2D
   Input:
@@ -67,6 +67,12 @@ def visualize_trajectory_2d(pose,path_name="Unknown",show_ori=False):
       dx,dy = [dx,dy]/np.sqrt(dx**2+dy**2)
       ax.quiver(pose[0,3,select_ori_index],pose[1,3,select_ori_index],dx,dy,\
           color="b",units="xy",width=1)
+  x = []
+  y = [] 
+  for landmark in landmarks:
+      x.append(landmark.mu[1])
+      y.append(landmark.mu[0])
+  ax.scatter(x,y)
   ax.set_xlabel('x')
   ax.set_ylabel('y')
   ax.axis('equal')

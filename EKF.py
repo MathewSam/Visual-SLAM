@@ -4,6 +4,45 @@ File to handle classes associated with EKF. The file has a separate class for th
 import numpy as np
 from scipy.linalg import expm
 
+def invert_pose(pose):
+	'''
+	Returns the invers of the pose 
+	Args:
+		pose: pose to be inverted
+	Returns:
+		pose_inv: inverse of pose 
+	'''
+	pose_inv = np.zeros((4,4))
+	pose_inv[:3,:3] = pose[:3,:3].T.copy() 
+	pose_inv[:-1,-1] = -np.dot(pose[:3,:3].T,pose[:-1,-1])
+	pose_inv[-1,-1] = 1
+	return pose_inv
+
+def dpi_dq(q):
+	'''
+	Differential of scaling matrix
+	Args:
+		q: input vector. Must be of shape 4,
+	Returns:
+		pi: differential of homogenous scaling function with respect to input
+	'''
+	assert q.shape == (4,),"Must be of shape (4,)"
+	pi = np.eye(4)
+	pi[:,2] = -q/q[2]
+	pi[2,2] = 0
+	return pi/q[2]
+
+def pi_q(q):
+	'''
+	Homogenous scaling of vector
+	Args:
+		q: vector to scale
+	Returns:
+		pi: scaled vector
+	'''
+	assert q.shape == (4,),"Must be of shape (4,)"
+	return q/q[2]
+
 class MotionModel:
 	'''
 	Defines the EKF filter and associated functionality
@@ -63,3 +102,44 @@ class MotionModel:
 	@property
 	def sigma(self):
 		return self._sigma
+
+class Landmark:
+	def __init__(self,M,oTi):
+		'''
+		'''
+		self.observed =  False
+		self._mu = np.zeros((4,))
+		self._mu[-1] = 1
+		self._sigma = np.eye(3,3)
+
+		self.M = M
+		self.oTi = oTi
+		self.D = np.vstack([np.eye(3),np.zeros((1,3))])
+
+	def update_landmark_position(self,z,pose):
+		'''
+		Updates location of landmark given feature location.
+		Args:
+			self:pointer to current instance of the class
+			z:Observed feature location
+			pose: position of observer/camera in world frame
+			M:
+			oTi:
+		'''
+		if not self.observed:
+			v = np.dot(np.linalg.pinv(self.M),z)
+			v = v/(z[0]-z[2])
+			self._mu = np.dot(np.linalg.pinv(np.dot(self.oTi,pose)),v)
+			self.observed = True
+		else:
+			projection = np.dot(self.oTi,np.dot(pose,self._mu))
+			z_hat = np.dot(self.M,pi_q(projection))
+
+			H = np.dot(np.dot(self.M,dpi_dq(projection)),np.dot(np.dot(self.oTi,pose),self.D))
+			K = np.dot(np.dot(self._sigma,H.T),np.linalg.inv(np.dot(np.dot(H,self._sigma),H.T) + np.random.randn(4,4)))
+			self._mu = self._mu + np.dot(np.dot(self.D,K),(z - z_hat))
+			self._sigma = np.dot(np.eye(3) - np.dot(K,H),self._sigma)
+
+	@property
+	def mu(self):
+		return self._mu
