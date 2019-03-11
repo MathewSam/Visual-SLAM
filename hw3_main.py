@@ -13,7 +13,7 @@ from EKF import MotionModel,Landmark,invert_pose
 
 
 if __name__ == '__main__':
-	filename = "./data/0042.npz"
+	filename = "./data/0027.npz"
 	t,features,linear_velocity,rotational_velocity,K,b,cam_T_imu = load_data(filename)
 	sensor_stream = Sensor(t,linear_velocity,rotational_velocity)
 	camera_stream = Camera(features,cam_T_imu,K,b)

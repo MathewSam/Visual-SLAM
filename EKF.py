@@ -127,7 +127,7 @@ class Landmark:
 			oTi:
 		'''
 		if not self.observed:
-			v = np.dot(z,np.linalg.inv(self.M))
+			v = np.dot(np.linalg.pinv(self.M),z)
 			v = v/v[3]
 			self._mu = np.dot(np.linalg.pinv(np.dot(self.oTi,pose)),v)
 			self.observed = True
@@ -136,7 +136,7 @@ class Landmark:
 			z_hat = np.dot(self.M,pi_q(projection))
 
 			H = np.dot(np.dot(self.M,dpi_dq(projection)),np.dot(np.dot(self.oTi,pose),self.D))
-			K = np.dot(np.dot(self._sigma,H.T),np.linalg.inv(np.dot(np.dot(H,self._sigma),H.T) + np.random.randn(4,4)))/100
+			K = np.dot(np.dot(self._sigma,H.T),np.linalg.inv(np.dot(np.dot(H,self._sigma),H.T) + 0.0005*np.eye(4)))
 			self._mu = self._mu + np.dot(np.dot(self.D,K),(z - z_hat))
 			self._sigma = np.dot(np.eye(3) - np.dot(K,H),self._sigma)
 
