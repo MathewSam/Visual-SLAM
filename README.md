@@ -5,10 +5,10 @@ The data needs to be provided as a .npy file containing time stamps, features, l
 
 ## Requirements
 <li>
-</item>numpy==1.15.4
-</item>scipy=1.1.0
-</item>matplotlib==3.0.2
-</item>argparse==1.1
+<item>numpy==1.15.4</item>
+<item>scipy=1.1.0</item>
+<item>matplotlib==3.0.2</item>
+<item>argparse==1.1</item>
 </li>
 
 ## Classes
