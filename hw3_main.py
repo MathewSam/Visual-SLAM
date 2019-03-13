@@ -1,19 +1,16 @@
-'''
-## TO DO:
-1.	Set up camera wrapper to handle data management
-2.	Fix observational model to work
-
-'''
+import argparse
 import numpy as np
 from utils import *
 from SENSOR import Camera,Sensor
 from EKF import MotionModel,Landmark,invert_pose
 
-
-
+parser = argparse.ArgumentParser()
+parser.add_argument("data_file",help="file containing features and IMU information")
 
 if __name__ == '__main__':
-	filename = "./data/0027.npz"
+	args = parser.parse_args()
+
+	filename = args.data_file
 	t,features,linear_velocity,rotational_velocity,K,b,cam_T_imu = load_data(filename)
 	sensor_stream = Sensor(t,linear_velocity,rotational_velocity)
 	camera_stream = Camera(features,cam_T_imu,K,b)

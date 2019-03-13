@@ -136,10 +136,114 @@ class Landmark:
 			z_hat = np.dot(self.M,pi_q(projection))
 
 			H = np.dot(np.dot(self.M,dpi_dq(projection)),np.dot(np.dot(self.oTi,pose),self.D))
-			K = np.dot(np.dot(self._sigma,H.T),np.linalg.inv(np.dot(np.dot(H,self._sigma),H.T) + 0.0005*np.eye(4)))
+			K = np.dot(np.dot(self._sigma,H.T),np.linalg.inv(np.dot(np.dot(H,self._sigma),H.T) + 0.005*np.eye(4)))
 			self._mu = self._mu + np.dot(np.dot(self.D,K),(z - z_hat))
 			self._sigma = np.dot(np.eye(3) - np.dot(K,H),self._sigma)
+
 
 	@property
 	def mu(self):
 		return self._mu
+
+class State:
+	'''
+	class to encapsulate both the positions of car and landmarks at every time step. The position is represented using a 
+	6x1 and the landmarks by a 4Mx1 where M is the number of landmarks
+	'''
+	def __init__(self,num_landmarks,M,oTi):
+		'''
+		Initializes state class to handle the mean and covariance of the state defined by the model 
+		'''
+		self._mu = np.zeros((4*(num_landmarks)+6,))
+		self._position_exp = np.eye(4)
+		self._landmarks = [Landmark(M,oTi) for i in range(num_landmarks)]
+		self._sigma = np.eye(4*num_landmarks + 6)
+
+	@staticmethod
+	def logm(A):
+		'''
+		Calculates matrix log to convert 4x4 matrix A to 6x1 vector 
+		Args:
+			A: matrix whose log is to be calculated
+		Returns:
+			epsilon: 6x1 vector representing 4x4 pose of car
+		'''
+		assert A.shape == (4,4) 
+		R = A[:3,:3]
+		p = A[:3,-1]
+		theta = np.arccos((np.trace(R)-1)/2)
+		theta_hat = (theta/np.sin(theta))*(R-R.T)
+		theta_hat = theta_hat/2
+		angle = np.array([theta_hat[1,-1],theta_hat[0,-1],theta_hat[0,1]])
+
+		c = ((1 + np.cos(theta))/np.square(theta)) - 1/(2*theta*np.sin(theta)) 
+		Jl_inv = np.eye(3) - (theta_hat/2) + (c*np.dot(theta_hat,theta_hat))
+		pos = np.dot(Jl_inv,p)
+		epsilon = np.hstack([pos,angle])
+		return epsilon
+
+	@staticmethod
+	def expm(A):
+		'''
+		Calculates matrix exp to convert 6x1 vector A to 4x4 vector 
+		Args:
+			A: vector whose exp is to be calculated
+		Returns:
+			T: 4x4 pose of car
+		'''
+		return None
+
+
+	@staticmethod
+	def _hat_map(vector):
+		'''
+		Generates hat map of provided vector
+		'''
+		hat = np.zeros((3,3))
+
+		hat[0,1] = -vector[2]
+		hat[0,2] = vector[1]
+		hat[1,0] = vector[2]
+		hat[1,2] = -vector[0]
+		hat[2,0] = -vector[1]
+		hat[2,1] = vector[0]
+
+		return hat
+
+	@property
+	def pose(self):
+		return self._position_exp
+
+	def predict(self,time_diff,velocity):
+		'''
+		Defines motion model + predict step of EKF given linear velocity, rotational velocity and time difference between readings
+		Args:
+			self: pointer to current instance of the class
+			time_diff: time difference between consecutive readings
+			velocity: combined velocity vector from both the rotation and linear 
+		'''
+		rho = velocity[:3]
+		theta = velocity[3:]
+		u_hat = np.zeros((4,4))
+		u_hat[:-1,:-1] = self._hat_map(theta)
+		u_hat[:-1,-1] = rho
+		self._position_exp = np.dot(expm(-time_diff*u_hat),self._position_exp)
+		self._mu[:6] = self.logm(self._position_exp)
+
+		u_spike = np.zeros((6,6))
+		u_spike[:3,:3] = self._hat_map(theta)
+		u_spike[:3,3:] = self._hat_map(rho)
+		u_spike[3:,3:] = self._hat_map(theta)
+		left = expm(-time_diff*u_spike)
+		self._sigma[:6,:6] = np.dot(np.dot(left,self._sigma[:6,:6]),left.T) + np.random.randn(6,6)
+
+	def update(self,observations):
+		'''
+		Defines observation model + update step of EKF given observations at time t
+		Args:
+			self: pointer to current instance of the class
+			observations: vector of observations at time t. if nothing is observed the vector is a vector composed only of -1 
+		'''
+		return None
+
+
